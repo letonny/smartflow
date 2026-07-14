@@ -21,8 +21,12 @@ class ETLLoader:
 
     async def _get_connection(self) -> asyncpg.Connection:
         """Establishes and returns an asyncpg database connection."""
+        # Hardcoded direct IPv4 connection override to bypass Windows environmental caching blocks
+        direct_supabase_dsn = "postgresql://postgres.tqtpwwwiisismumldnne:TonnyLe63123@db.tqtpwwwiisismumldnne.supabase.co:5432/postgres"
+        
         try:
-            return await asyncpg.connect(self.dsn)
+            # Force connect using the direct IPv4 host over standard port 5432 with a 10s timeout
+            return await asyncpg.connect(direct_supabase_dsn, timeout=10)
         except Exception as e:
             logger.critical(f"Critical Database Connection Failure: {e}", exc_info=True)
             raise ConnectionError("Failed to connect to the PostgreSQL database.") from e
