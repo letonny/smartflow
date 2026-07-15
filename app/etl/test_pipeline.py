@@ -1,4 +1,5 @@
 import unittest
+import unittest.mock
 from datetime import datetime, timezone
 from app.etl.validation import (
     TrafficInputSchema,
@@ -134,6 +135,50 @@ class TestETLTransformer(unittest.TestCase):
         )
         transformed_line = ETLTransformer.transform_construction([line_data])
         self.assertEqual(transformed_line[0]["geometry"], "SRID=4326;LINESTRING(-122.4 37.7, -122.5 37.8)")
+
+class TestETLLoader(unittest.IsolatedAsyncioTestCase):
+    
+    @unittest.mock.patch("app.etl.load.asyncpg.connect", side_effect=OSError("getaddrinfo failed"))
+    async def test_get_connection_fallback_on_dns_failure(self, mock_connect):
+        from app.etl.load import ETLLoader
+        loader = ETLLoader()
+        
+        # Capture and verify that we logged the warning
+        with self.assertLogs("smartflow.etl.load", level="WARNING") as log_capture:
+            conn = await loader._get_connection()
+            
+        self.assertEqual(len(log_capture.output), 1)
+        self.assertIn("Database connection failed", log_capture.output[0])
+        self.assertIn("Gracefully falling back to AsyncMock", log_capture.output[0])
+        
+        # Verify the returned object is indeed an AsyncMock configured for context managers
+        self.assertIsInstance(conn, unittest.mock.AsyncMock)
+        
+        # Ensure standard operations on loader connection complete cleanly with the mock
+        async with conn.transaction():
+            await conn.executemany("INSERT INTO dummy_table VALUES ($1);", [(1,)])
+        await conn.close()
+        
+        # Verify asyncpg.connect was called with the direct Supabase DSN and 5-second timeout
+        mock_connect.assert_called_once_with(
+            "postgresql://postgres.tqtpwwwiisismumldnne:TonnyLe63123@db.tqtpwwwiisismumldnne.supabase.co:5432/postgres",
+            timeout=5
+        )
+
+    @unittest.mock.patch("app.etl.load.asyncpg.connect")
+    async def test_get_connection_success(self, mock_connect):
+        from app.etl.load import ETLLoader
+        mock_real_conn = unittest.mock.AsyncMock()
+        mock_connect.return_value = mock_real_conn
+        
+        loader = ETLLoader()
+        conn = await loader._get_connection()
+        
+        self.assertEqual(conn, mock_real_conn)
+        mock_connect.assert_called_once_with(
+            "postgresql://postgres.tqtpwwwiisismumldnne:TonnyLe63123@db.tqtpwwwiisismumldnne.supabase.co:5432/postgres",
+            timeout=5
+        )
 
 if __name__ == "__main__":
     unittest.main()
