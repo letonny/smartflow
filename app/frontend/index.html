@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFlow | Pipeline Monitoring Command Center</title>
+    <!-- Tailwind CSS CDN (v3) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            950: '#030712',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'ui-monospace', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom High-Tech Grid Background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        }
+        /* Glow animations */
+        @keyframes pulse-glow {
+            0%, 100% {
+                opacity: 0.6;
+                box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+            }
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 25px rgba(34, 197, 94, 0.8);
+            }
+        }
+        .glowing-dot-active {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        /* Terminal styling scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(71, 85, 105, 0.5);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.7);
+        }
+        
+        /* Scanlines for terminal feel */
+        .scanlines {
+            position: relative;
+            overflow: hidden;
+        }
+        .scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 10;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+        
+        /* Card pulsing borders for simulation updates */
+        @keyframes flash-cyan {
+            0%, 100% { border-color: rgba(30, 41, 59, 1); }
+            50% { border-color: rgba(6, 182, 212, 1); box-shadow: 0 0 15px rgba(6, 182, 212, 0.3); }
+        }
+        @keyframes flash-amber {
+            0%, 100% { border-color: rgba(30, 41, 59, 1); }
+            50% { border-color: rgba(245, 158, 11, 1); box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+        }
+        @keyframes flash-red {
+            0%, 100% { border-color: rgba(30, 41, 59, 1); }
+            50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+        }
+        @keyframes flash-emerald {
+            0%, 100% { border-color: rgba(30, 41, 59, 1); }
+            50% { border-color: rgba(16, 185, 129, 1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+        }
+        .animate-flash-cyan { animation: flash-cyan 1s ease-in-out 2; }
+        .animate-flash-amber { animation: flash-amber 1s ease-in-out 2; }
+        .animate-flash-red { animation: flash-red 1s ease-in-out 2; }
+        .animate-flash-emerald { animation: flash-emerald 1s ease-in-out 2; }
+    </style>
+</head>
+<body class="h-full text-slate-100 bg-slate-950 bg-grid selection:bg-cyan-500 selection:text-slate-950 flex flex-col antialiased">
+
+    <!-- TOP HEADER BAR -->
+    <header class="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md px-6 py-4 shrink-0 relative z-20">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            
+            <!-- Branding & Logo -->
+            <div class="flex items-center space-x-3.5">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-900/20">
+                    <!-- Stylized Flow SVG Icon -->
+                    <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                        SmartFlow
+                    </h1>
+                    <p class="text-xs font-semibold text-slate-400 tracking-wider uppercase">Pipeline Monitoring Control</p>
+                </div>
+            </div>
+
+            <!-- Global Live KPI Mini Widgets -->
+            <div class="hidden xl:flex items-center space-x-8 text-xs border-l border-slate-800 pl-8">
+                <div>
+                    <div class="text-slate-500 mb-0.5">Global Throughput</div>
+                    <div class="font-mono font-medium text-slate-200 flex items-center">
+                        <span id="global-throughput">24.8</span> <span class="text-slate-500 ml-1">rec/s</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-slate-500 mb-0.5">DB Connections</div>
+                    <div class="font-mono font-medium text-slate-200">
+                        <span id="db-conn-pool">5 / 20</span> <span class="text-cyan-500 ml-1">Active</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-slate-500 mb-0.5">Memory Usage</div>
+                    <div class="font-mono font-medium text-slate-200">
+                        <span id="mem-usage">42.4</span> <span class="text-slate-500 ml-1">MB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global System Status Indicators -->
+            <div class="flex items-center space-x-4 self-end md:self-auto">
+                <!-- Sync Indicator -->
+                <div class="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 text-xs">
+                    <span class="text-slate-400 font-medium mr-2">Status Mode:</span>
+                    <span id="mode-badge" class="font-bold text-cyan-400 tracking-wide">MOCK DEMO</span>
+                </div>
+                
+                <!-- Main Connection Light -->
+                <div class="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 text-xs space-x-2">
+                    <div id="status-dot" class="h-2.5 w-2.5 rounded-full bg-emerald-500 glowing-dot-active shadow-[0_0_10px_#10b981]"></div>
+                    <span id="status-text" class="font-semibold text-slate-200 tracking-wide">SYSTEM HEALTHY</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD SCROLLER -->
+    <main class="flex-1 overflow-y-auto p-6 max-w-7xl w-full mx-auto space-y-6">
+
+        <!-- WORKSPACE OVERVIEW / METADATA HEADER -->
+        <div class="bg-gradient-to-r from-slate-900/80 to-slate-900/40 border border-slate-800/60 rounded-2xl p-6 shadow-xl backdrop-blur-md relative overflow-hidden">
+            <div class="absolute top-0 right-0 h-40 w-40 bg-gradient-to-bl from-indigo-500/5 to-cyan-500/5 rounded-full filter blur-xl"></div>
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <span>PostGIS Spatial Intelligence Orchestrator</span>
+                        <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono font-normal">v1.0.0-beta</span>
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1 max-w-2xl">
+                        This administrative panel tracks continuous spatial streaming loads for the SmartFlow core server. Ingested datasets are parsed, georeferenced via geometry castings, and committed directly to Supabase PostGIS spatial indices.
+                    </p>
+                </div>
+                <div class="shrink-0 flex gap-2">
+                    <button onclick="triggerSyncETL()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 active:scale-95 transition-all text-xs font-semibold rounded-lg shadow-md shadow-cyan-950/20 flex items-center space-x-2">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.253 8H18" />
+                        </svg>
+                        <span>Force Ingestion Sync</span>
+                    </button>
+                    <button onclick="clearAllTerminals()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-xs font-semibold rounded-lg text-slate-300">
+                        Clear Consoles
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- THE 4 MAIN PIPELINE GRID CARDS -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- CARD 1: TRAFFIC DYNAMICS -->
+            <div id="card-traffic" class="group bg-slate-900/50 border border-slate-800 hover:border-slate-700/80 transition-all duration-300 rounded-2xl p-5 shadow-2xl flex flex-col relative overflow-hidden">
+                <div class="absolute top-0 right-0 h-24 w-24 bg-gradient-to-bl from-cyan-500/5 to-transparent rounded-bl-3xl pointer-events-none"></div>
+                
+                <!-- Card Header -->
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/60">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 rounded-xl bg-cyan-950/50 border border-cyan-800/40 text-cyan-400">
+                            <!-- Highway icon -->
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-100 group-hover:text-cyan-400 transition-colors">Traffic Dynamics</h3>
+                            <p class="text-[10px] text-slate-400 font-mono">STEP 1 • TELEMETRY INGEST</p>
+                        </div>
+                    </div>
+                    <span id="traffic-sync-badge" class="text-[10px] bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 px-2 py-0.5 rounded-full font-mono font-medium">14.2 req/s</span>
+                </div>
+
+                <!-- Key Metrics row -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Avg Network Speed</span>
+                        <span id="metric-traffic-speed" class="font-mono text-lg font-bold text-cyan-400">72.4 <span class="text-xs text-slate-500 font-normal">km/h</span></span>
+                    </div>
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Congestion Index</span>
+                        <div id="metric-traffic-congest-wrap" class="flex items-center justify-center space-x-1.5">
+                            <span id="metric-traffic-congestion" class="font-mono text-lg font-bold text-slate-200">0.28</span>
+                            <span id="badge-traffic-level" class="text-[9px] bg-emerald-950/80 text-emerald-400 px-1 rounded border border-emerald-800/50">LIGHT</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Processed Telemetry</span>
+                        <span id="metric-traffic-count" class="font-mono text-lg font-bold text-slate-300">1,420</span>
+                    </div>
+                </div>
+
+                <!-- Mini Console Terminal Header -->
+                <div class="flex items-center justify-between text-[11px] mb-1.5 px-1 text-slate-500 font-medium">
+                    <span class="font-mono flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                        ST_Intersects Segment Join Stream
+                    </span>
+                    <button onclick="clearConsole('terminal-traffic')" class="hover:text-slate-300 transition-colors font-mono">CLEAR</button>
+                </div>
+
+                <!-- Mini Console Terminal Box -->
+                <div class="scanlines rounded-xl border border-slate-900 bg-black shadow-inner relative flex-1">
+                    <div id="terminal-traffic" class="custom-scrollbar font-mono text-xs overflow-y-auto h-52 space-y-1 p-3 select-all leading-relaxed relative z-10">
+                        <!-- Simulated lines appended here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 2: WEATHER ALERTS -->
+            <div id="card-weather" class="group bg-slate-900/50 border border-slate-800 hover:border-slate-700/80 transition-all duration-300 rounded-2xl p-5 shadow-2xl flex flex-col relative overflow-hidden">
+                <div class="absolute top-0 right-0 h-24 w-24 bg-gradient-to-bl from-amber-500/5 to-transparent rounded-bl-3xl pointer-events-none"></div>
+                
+                <!-- Card Header -->
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/60">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 rounded-xl bg-amber-950/50 border border-amber-800/40 text-amber-400">
+                            <!-- Weather icon -->
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-100 group-hover:text-amber-400 transition-colors">Weather Alerts</h3>
+                            <p class="text-[10px] text-slate-400 font-mono">STEP 2 • ENVIRONMENT TRACKER</p>
+                        </div>
+                    </div>
+                    <span id="weather-sync-badge" class="text-[10px] bg-amber-950/60 text-amber-400 border border-amber-800/40 px-2 py-0.5 rounded-full font-mono font-medium">1.0 req/s</span>
+                </div>
+
+                <!-- Key Metrics row -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Temperature</span>
+                        <span id="metric-weather-temp" class="font-mono text-lg font-bold text-amber-400">22.5 <span class="text-xs text-slate-500 font-normal">°C</span></span>
+                    </div>
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Rain Intensity</span>
+                        <span id="metric-weather-rain" class="font-mono text-lg font-bold text-slate-200">0.0 <span class="text-xs text-slate-500 font-normal">mm/h</span></span>
+                    </div>
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Visibility Range</span>
+                        <span id="metric-weather-visibility" class="font-mono text-lg font-bold text-slate-300">10,000 <span class="text-xs text-slate-500 font-normal">m</span></span>
+                    </div>
+                </div>
+
+                <!-- Mini Console Terminal Header -->
+                <div class="flex items-center justify-between text-[11px] mb-1.5 px-1 text-slate-500 font-medium">
+                    <span class="font-mono flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                        PostGIS Spatial KNN Snapshot Stream
+                    </span>
+                    <button onclick="clearConsole('terminal-weather')" class="hover:text-slate-300 transition-colors font-mono">CLEAR</button>
+                </div>
+
+                <!-- Mini Console Terminal Box -->
+                <div class="scanlines rounded-xl border border-slate-900 bg-black shadow-inner relative flex-1">
+                    <div id="terminal-weather" class="custom-scrollbar font-mono text-xs overflow-y-auto h-52 space-y-1 p-3 select-all leading-relaxed relative z-10">
+                        <!-- Simulated lines appended here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 3: ACTIVE INCIDENTS -->
+            <div id="card-incidents" class="group bg-slate-900/50 border border-slate-800 hover:border-slate-700/80 transition-all duration-300 rounded-2xl p-5 shadow-2xl flex flex-col relative overflow-hidden">
+                <div class="absolute top-0 right-0 h-24 w-24 bg-gradient-to-bl from-red-500/5 to-transparent rounded-bl-3xl pointer-events-none"></div>
+                
+                <!-- Card Header -->
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/60">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 rounded-xl bg-red-950/50 border border-red-800/40 text-red-400">
+                            <!-- Warning Triangle icon -->
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-100 group-hover:text-red-400 transition-colors">Active Incidents</h3>
+                            <p class="text-[10px] text-slate-400 font-mono">STEP 3 • ROAD DISRUPTIONS</p>
+                        </div>
+                    </div>
+                    <span id="incidents-sync-badge" class="text-[10px] bg-red-950/60 text-red-400 border border-red-800/40 px-2 py-0.5 rounded-full font-mono font-medium">0.2 req/s</span>
+                </div>
+
+                <!-- Key Metrics row -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Active Blocks</span>
+                        <span id="metric-incidents-active" class="font-mono text-lg font-bold text-red-400">2 <span class="text-xs text-slate-500 font-normal">Events</span></span>
+                    </div>
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Critical Priority</span>
+                        <span id="metric-incidents-critical" class="font-mono text-lg font-bold text-slate-200">0</span>
+                    </div>
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Cleared (1 Hour)</span>
+                        <span id="metric-incidents-cleared" class="font-mono text-lg font-bold text-slate-300">5</span>
+                    </div>
+                </div>
+
+                <!-- Mini Console Terminal Header -->
+                <div class="flex items-center justify-between text-[11px] mb-1.5 px-1 text-slate-500 font-medium">
+                    <span class="font-mono flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-red-400 animate-ping"></span>
+                        Point GeoJSON Live Ingestion Stream
+                    </span>
+                    <button onclick="clearConsole('terminal-incidents')" class="hover:text-slate-300 transition-colors font-mono">CLEAR</button>
+                </div>
+
+                <!-- Mini Console Terminal Box -->
+                <div class="scanlines rounded-xl border border-slate-900 bg-black shadow-inner relative flex-1">
+                    <div id="terminal-incidents" class="custom-scrollbar font-mono text-xs overflow-y-auto h-52 space-y-1 p-3 select-all leading-relaxed relative z-10">
+                        <!-- Simulated lines appended here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 4: CONSTRUCTION ZONES -->
+            <div id="card-construction" class="group bg-slate-900/50 border border-slate-800 hover:border-slate-700/80 transition-all duration-300 rounded-2xl p-5 shadow-2xl flex flex-col relative overflow-hidden">
+                <div class="absolute top-0 right-0 h-24 w-24 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-bl-3xl pointer-events-none"></div>
+                
+                <!-- Card Header -->
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/60">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-800/40 text-emerald-400">
+                            <!-- Shovel / Construction cone icon -->
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-100 group-hover:text-emerald-400 transition-colors">Construction Zones</h3>
+                            <p class="text-[10px] text-slate-400 font-mono">STEP 4 • LANE RESTRICTIONS</p>
+                        </div>
+                    </div>
+                    <span id="construction-sync-badge" class="text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 px-2 py-0.5 rounded-full font-mono font-medium">0.1 req/s</span>
+                </div>
+
+                <!-- Key Metrics row -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Planned Zones</span>
+                        <span id="metric-construction-planned" class="font-mono text-lg font-bold text-slate-300">3</span>
+                    </div>
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Active Restrictions</span>
+                        <span id="metric-construction-active" class="font-mono text-lg font-bold text-emerald-400">1 <span class="text-xs text-slate-500 font-normal">Zone</span></span>
+                    </div>
+                    <div class="bg-slate-950/55 rounded-xl p-3 border border-slate-800/30 text-center">
+                        <span class="text-[10px] text-slate-500 block mb-1">Completed Today</span>
+                        <span id="metric-construction-completed" class="font-mono text-lg font-bold text-slate-400">2</span>
+                    </div>
+                </div>
+
+                <!-- Mini Console Terminal Header -->
+                <div class="flex items-center justify-between text-[11px] mb-1.5 px-1 text-slate-500 font-medium">
+                    <span class="font-mono flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        Polygon & LineString Loader Feed
+                    </span>
+                    <button onclick="clearConsole('terminal-construction')" class="hover:text-slate-300 transition-colors font-mono">CLEAR</button>
+                </div>
+
+                <!-- Mini Console Terminal Box -->
+                <div class="scanlines rounded-xl border border-slate-900 bg-black shadow-inner relative flex-1">
+                    <div id="terminal-construction" class="custom-scrollbar font-mono text-xs overflow-y-auto h-52 space-y-1 p-3 select-all leading-relaxed relative z-10">
+                        <!-- Simulated lines appended here -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- BOTTOM PRESENTATION INTERACTIVE CONTROLLER BOARD -->
+        <div class="bg-gradient-to-r from-slate-900 to-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-2xl relative">
+            <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+                
+                <!-- Left: Simulator Meta Info -->
+                <div class="space-y-1">
+                    <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded bg-cyan-500 animate-pulse"></span>
+                        Interactive Live Presentation Controller
+                    </h3>
+                    <p class="text-xs text-slate-400">
+                        Deploy events instantly during live demonstrations to dynamically trigger custom pipeline warning sequences, error traps, and statistical fluctuations.
+                    </p>
+                </div>
+
+                <!-- Center: Interactive Stream Speed Controls -->
+                <div class="flex flex-wrap items-center gap-4 bg-slate-950/50 p-3 rounded-xl border border-slate-800/60 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-400">Stream Status:</span>
+                        <button id="btn-toggle-stream" onclick="toggleStream()" class="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 font-semibold transition-all">
+                            RUNNING
+                        </button>
+                    </div>
+                    <div class="h-4 w-px bg-slate-800"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-400">Sync Interval:</span>
+                        <select id="select-interval" onchange="changeInterval(this.value)" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 focus:ring-1 focus:ring-cyan-500 focus:outline-none text-slate-200">
+                            <option value="1000">Fast (1.0s)</option>
+                            <option value="2500" selected>Standard (2.5s)</option>
+                            <option value="5000">Slow (5.0s)</option>
+                            <option value="10000">Stretched (10s)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Right: Simulation Scenario Triggers -->
+                <div class="flex flex-wrap gap-2.5">
+                    <button onclick="triggerScenario('rush-hour')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 hover:text-cyan-400 transition-all text-xs font-semibold rounded-lg border border-slate-700/60 flex items-center space-x-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                        <span>Rush Hour</span>
+                    </button>
+                    <button onclick="triggerScenario('thunderstorm')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 hover:text-amber-400 transition-all text-xs font-semibold rounded-lg border border-slate-700/60 flex items-center space-x-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+                        <span>Rainstorm</span>
+                    </button>
+                    <button onclick="triggerScenario('accident')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 hover:text-red-400 transition-all text-xs font-semibold rounded-lg border border-slate-700/60 flex items-center space-x-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-red-400"></span>
+                        <span>Crash Event</span>
+                    </button>
+                    <button onclick="triggerScenario('construction')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 hover:text-emerald-400 transition-all text-xs font-semibold rounded-lg border border-slate-700/60 flex items-center space-x-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                        <span>Lane Closure</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER STATUS -->
+    <footer class="border-t border-slate-800/80 bg-slate-900/20 px-6 py-3.5 shrink-0 text-center text-xs text-slate-500 relative z-20">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div>
+                © 2026 SmartFlow Analytics Grid. Built for live deployment and presentation.
+            </div>
+            <div class="font-mono text-[10px] text-slate-600 flex items-center justify-center gap-3">
+                <span>POSTGIS: 3.4 ACTIVE</span>
+                <span class="h-3 w-px bg-slate-800"></span>
+                <span>FASTAPI: COMPATIBLE</span>
+                <span class="h-3 w-px bg-slate-800"></span>
+                <span id="footer-db-status">DB: DETECTING...</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE DASHBOARD CODE ENGINE -->
+    <script>
+        // Global Dashboard State
+        const state = {
+            isLiveBackend: false,
+            backendUrl: "",
+            intervalSpeed: 2500, // standard interval (ms)
+            isRunning: true,
+            globalTelemetrySec: 24.8,
+            memUsageMB: 42.4,
+            stats: {
+                traffic: { avgSpeed: 72.4, congestion: 0.28, count: 1420 },
+                weather: { temp: 22.5, rain: 0.0, visibility: 10000 },
+                incidents: { active: 2, critical: 0, cleared: 5 },
+                construction: { planned: 3, active: 1, completed: 2 }
+            }
+        };
+
+        // Static Data Pool for Simulated logs
+        const logTemplates = {
+            traffic: [
+                { level: "INFO", text: "Received raw batch of {BATCH_SIZE} telemetry payloads from road_segments sensor grid" },
+                { level: "DEBUG", text: "Validation succeeded: TrafficInputSchema parsed for segment ID {SEG_ID}" },
+                { level: "INFO", text: "ST_Intersects spatial index join executed successfully on viewport in {TIME}ms" },
+                { level: "INFO", text: "Successfully loaded {BATCH_SIZE} traffic readings to table traffic_readings in {TIME_DB}ms" },
+                { level: "DEBUG", text: "Calculating hourly speed moving averages for segment {SEG_ID}... delta: {DELTA} km/h" },
+                { level: "INFO", text: "Speed readings calibrated. Active road telemetry grid healthy." },
+                { level: "DEBUG", text: "Inference runner completed trip duration prediction for corridor {SEG_ID} (Result: {PRED}s)" }
+            ],
+            weather: [
+                { level: "INFO", text: "Initiating weather snapshot ingestion from spatial coordinates ({LAT}, {LON})" },
+                { level: "INFO", text: "PostGIS GiST nearest-neighbor operator (<->) matched snapshot {UUID_SHORT}" },
+                { level: "DEBUG", text: "Calculated exact geodetic distance: {DIST}m utilizing geography casting ST_Distance" },
+                { level: "INFO", text: "Snapshot metrics processed: Temperature {TEMP}C, Rain {RAIN} mm/hr, Visibility {VIS}m" },
+                { level: "DEBUG", text: "Committed 1 weather snapshot record successfully to postgres in 4.2ms" },
+                { level: "INFO", text: "National environmental forecast channel sync validated." }
+            ],
+            incidents: [
+                { level: "INFO", text: "Polling live incidents feed. Filtering active road disruptions." },
+                { level: "INFO", text: "Querying active incidents intersecting current viewport (bounding box criteria met)" },
+                { level: "DEBUG", text: "Incident GeoJSON parsing complete: extracted 1 POINT geometry feature" },
+                { level: "INFO", text: "Completed incident state checks. 0 records require database cascade." }
+            ],
+            construction: [
+                { level: "INFO", text: "Ingesting raw construction zone schedules. Validating timelines." },
+                { level: "DEBUG", text: "ConstructionInputSchema validated successfully for project: '{PROJECT_NAME}'" },
+                { level: "INFO", text: "Generated ST_LineString (SRID 4326) geometry representing restricted segment lane footprint" },
+                { level: "INFO", text: "Successfully committed active construction status for record ID {UUID_SHORT}" },
+                { level: "DEBUG", text: "Updated routing detour flags for {COUNT_CONST} active work zones." }
+            ]
+        };
+
+        const projects = [
+            "I-80 Bridge Main Deck Reconstruction",
+            "Broadway Avenue Gas Main Leak Repair",
+            "Highway 101 North Lane Resurfacing",
+            "Cesar Chavez Blvd Signal Retiming",
+            "Market St Pedestrian Plaza Barrier Install"
+        ];
+
+        // Core Terminal Appender
+        function logToTerminal(terminalId, text, level = "INFO") {
+            const terminal = document.getElementById(terminalId);
+            if (!terminal) return;
+            
+            // Generate clean timestamp matching backend (HH:MM:SS.mmm)
+            const d = new Date();
+            const timestamp = d.toLocaleTimeString('en-US', { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+            
+            let colorClass = "text-emerald-400"; // Default INFO neon green
+            if (level === "DEBUG") colorClass = "text-slate-400 font-normal";
+            if (level === "WARN") colorClass = "text-amber-400 font-semibold";
+            if (level === "ERROR") colorClass = "text-red-500 font-bold animate-pulse";
+
+            const div = document.createElement("div");
+            div.className = "flex items-start font-mono text-[11px] tracking-tight py-0.5 border-b border-slate-900/40 pb-1";
+            div.innerHTML = `
+                <span class="text-slate-600 mr-2 select-none shrink-0">[${timestamp}]</span>
+                <span class="${colorClass} mr-2 shrink-0 select-none">[${level}]</span>
+                <span class="text-slate-300 break-all select-all">${text}</span>
+            `;
+            
+            terminal.appendChild(div);
+            
+            // Auto scroll to bottom
+            terminal.scrollTop = terminal.scrollHeight;
+            
+            // Cap lines to prevent memory bloat during prolonged presentations
+            while (terminal.childElementCount > 60) {
+                terminal.removeChild(terminal.firstChild);
+            }
+        }
+
+        // Individual Console Clearing
+        function clearConsole(terminalId) {
+            const terminal = document.getElementById(terminalId);
+            if (terminal) {
+                terminal.innerHTML = "";
+                logToTerminal(terminalId, "Console buffer cleared by Administrator.", "INFO");
+            }
+        }
+
+        // Global Clear
+        function clearAllTerminals() {
+            clearConsole('terminal-traffic');
+            clearConsole('terminal-weather');
+            clearConsole('terminal-incidents');
+            clearConsole('terminal-construction');
+        }
+
+        // Generates realistic fluctuating values and streams logs randomly
+        function streamGeneratorStep() {
+            if (!state.isRunning) return;
+
+            // Update Global Metrics slightly
+            state.globalTelemetrySec = Math.round((24.8 + (Math.random() - 0.5) * 4) * 10) / 10;
+            state.memUsageMB = Math.round((42.4 + (Math.random() - 0.5) * 1.5) * 10) / 10;
+            document.getElementById('global-throughput').innerText = state.globalTelemetrySec;
+            document.getElementById('mem-usage').innerText = state.memUsageMB;
+
+            // Randomly select which pipeline gets a log stream in this interval tick
+            const steps = ["traffic", "weather", "incidents", "construction"];
+            const chosenStep = steps[Math.floor(Math.random() * steps.length)];
+
+            generateSinglePipelineLog(chosenStep);
+
+            // Natural micro fluctuations of standard stats
+            fluctuateStandardStats();
+            updateStatsUI();
+        }
+
+        function generateSinglePipelineLog(step) {
+            const templates = logTemplates[step];
+            const t = templates[Math.floor(Math.random() * templates.length)];
+            
+            let logText = t.text;
+            
+            // Token replacements for rich logs
+            logText = logText.replace(/{BATCH_SIZE}/g, Math.floor(Math.random() * 12) + 5);
+            logText = logText.replace(/{SEG_ID}/g, Math.floor(Math.random() * 200) + 100);
+            logText = logText.replace(/{TIME}/g, (Math.random() * 12 + 2).toFixed(1));
+            logText = logText.replace(/{TIME_DB}/g, (Math.random() * 8 + 1).toFixed(1));
+            logText = logText.replace(/{DELTA}/g, (Math.random() * 6 - 3).toFixed(1));
+            logText = logText.replace(/{PRED}/g, Math.floor(Math.random() * 300) + 120);
+            
+            logText = logText.replace(/{LAT}/g, (37.76 + Math.random() * 0.04).toFixed(4));
+            logText = logText.replace(/{LON}/g, (-122.44 + Math.random() * 0.05).toFixed(4));
+            logText = logText.replace(/{DIST}/g, Math.floor(Math.random() * 400) + 50);
+            logText = logText.replace(/{TEMP}/g, state.stats.weather.temp.toFixed(1));
+            logText = logText.replace(/{RAIN}/g, state.stats.weather.rain.toFixed(1));
+            logText = logText.replace(/{VIS}/g, state.stats.weather.visibility);
+            
+            logText = logText.replace(/{PROJECT_NAME}/g, projects[Math.floor(Math.random() * projects.length)]);
+            logText = logText.replace(/{COUNT_CONST}/g, state.stats.construction.active);
+            logText = logText.replace(/{UUID_SHORT}/g, Math.random().toString(16).substr(2, 8));
+
+            logToTerminal(`terminal-${step}`, logText, t.level);
+
+            // Trigger minor incremental counter updates based on logs
+            if (step === "traffic") {
+                state.stats.traffic.count += Math.floor(Math.random() * 4) + 1;
+            }
+        }
+
+        // Gently wanders the numbers so the page feels natural during demos
+        function fluctuateStandardStats() {
+            // Traffic Speed: slight drift around 72 km/h
+            const speedDrift = (Math.random() - 0.5) * 0.8;
+            state.stats.traffic.avgSpeed = Math.max(50, Math.min(85, state.stats.traffic.avgSpeed + speedDrift));
+            state.stats.traffic.avgSpeed = Math.round(state.stats.traffic.avgSpeed * 10) / 10;
+
+            // Traffic Congestion Index: slight drift around 0.28
+            const congestDrift = (Math.random() - 0.5) * 0.02;
+            state.stats.traffic.congestion = Math.max(0.05, Math.min(0.95, state.stats.traffic.congestion + congestDrift));
+            state.stats.traffic.congestion = Math.round(state.stats.traffic.congestion * 100) / 100;
+
+            // Weather Temp: slow wandering
+            const tempDrift = (Math.random() - 0.5) * 0.1;
+            state.stats.weather.temp = Math.max(12, Math.min(32, state.stats.weather.temp + tempDrift));
+            state.stats.weather.temp = Math.round(state.stats.weather.temp * 10) / 10;
+        }
+
+        // Writes internal state numbers to UI containers and colors indicators
+        function updateStatsUI() {
+            // Traffic Dynamics
+            document.getElementById('metric-traffic-speed').innerHTML = `${state.stats.traffic.avgSpeed} <span class="text-xs text-slate-500 font-normal">km/h</span>`;
+            document.getElementById('metric-traffic-congestion').innerText = state.stats.traffic.congestion.toFixed(2);
+            document.getElementById('metric-traffic-count').innerText = state.stats.traffic.count.toLocaleString();
+            
+            // Adjust Traffic Congestion badge style
+            const cScore = state.stats.traffic.congestion;
+            const badge = document.getElementById('badge-traffic-level');
+            if (cScore < 0.35) {
+                badge.innerText = "LIGHT";
+                badge.className = "text-[9px] bg-emerald-950/80 text-emerald-400 px-1 rounded border border-emerald-800/50";
+            } else if (cScore < 0.65) {
+                badge.innerText = "MODERATE";
+                badge.className = "text-[9px] bg-amber-950/80 text-amber-400 px-1 rounded border border-amber-800/50";
+            } else {
+                badge.innerText = "HEAVY";
+                badge.className = "text-[9px] bg-red-950/80 text-red-400 px-1 rounded border border-red-800/50";
+            }
+
+            // Weather Ingest
+            document.getElementById('metric-weather-temp').innerHTML = `${state.stats.weather.temp.toFixed(1)} <span class="text-xs text-slate-500 font-normal">°C</span>`;
+            document.getElementById('metric-weather-rain').innerHTML = `${state.stats.weather.rain.toFixed(1)} <span class="text-xs text-slate-500 font-normal">mm/h</span>`;
+            document.getElementById('metric-weather-visibility').innerHTML = `${state.stats.weather.visibility.toLocaleString()} <span class="text-xs text-slate-500 font-normal">m</span>`;
+
+            // Active Incidents
+            document.getElementById('metric-incidents-active').innerHTML = `${state.stats.incidents.active} <span class="text-xs text-slate-500 font-normal">Events</span>`;
+            document.getElementById('metric-incidents-critical').innerText = state.stats.incidents.critical;
+            document.getElementById('metric-incidents-cleared').innerText = state.stats.incidents.cleared;
+
+            // Construction Ingest
+            document.getElementById('metric-construction-planned').innerText = state.stats.construction.planned;
+            document.getElementById('metric-construction-active').innerHTML = `${state.stats.construction.active} <span class="text-xs text-slate-500 font-normal">Zone</span>`;
+            document.getElementById('metric-construction-completed').innerText = state.stats.construction.completed;
+        }
+
+        // Trigger Sync Burst Simulation
+        function triggerSyncETL() {
+            logToTerminal('terminal-traffic', "Sync action requested. Executing force pipeline updates...", "INFO");
+            logToTerminal('terminal-weather', "Sync action requested. Initiating rapid sensor polling...", "INFO");
+            logToTerminal('terminal-incidents', "Sync action requested. Re-indexing live GeoJSON layers...", "INFO");
+            logToTerminal('terminal-construction', "Sync action requested. Refreshing dynamic workzone constraints...", "INFO");
+
+            // Append 3 fast logs on each console spread over short sub-intervals
+            setTimeout(() => {
+                generateSinglePipelineLog('traffic');
+                generateSinglePipelineLog('weather');
+                generateSinglePipelineLog('incidents');
+                generateSinglePipelineLog('construction');
+            }, 300);
+            setTimeout(() => {
+                generateSinglePipelineLog('traffic');
+                generateSinglePipelineLog('weather');
+                generateSinglePipelineLog('incidents');
+                generateSinglePipelineLog('construction');
+            }, 700);
+        }
+
+        // Toggle Running Stream
+        function toggleStream() {
+            state.isRunning = !state.isRunning;
+            const btn = document.getElementById('btn-toggle-stream');
+            if (state.isRunning) {
+                btn.innerText = "RUNNING";
+                btn.className = "px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 font-semibold transition-all";
+                logToTerminal('terminal-traffic', "Simulated stream feeds resumed.", "INFO");
+            } else {
+                btn.innerText = "PAUSED";
+                btn.className = "px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 font-semibold transition-all";
+                logToTerminal('terminal-traffic', "Simulated stream feeds suspended by user.", "WARN");
+            }
+        }
+
+        // Change Log Interval Speed
+        let intervalTimer = null;
+        function changeInterval(val) {
+            state.intervalSpeed = parseInt(val);
+            if (intervalTimer) {
+                clearInterval(intervalTimer);
+            }
+            intervalTimer = setInterval(streamGeneratorStep, state.intervalSpeed);
+            logToTerminal('terminal-traffic', `Stream pacing interval updated to ${state.intervalSpeed}ms.`, "DEBUG");
+        }
+
+        // SCENARIO SIMULATOR
+        function triggerScenario(type) {
+            if (type === 'rush-hour') {
+                // Card highlight effect
+                flashCardBorder('card-traffic', 'animate-flash-cyan');
+                
+                // Set stats immediately
+                state.stats.traffic.congestion = 0.88;
+                state.stats.traffic.avgSpeed = 22.4;
+                state.stats.traffic.count += 8;
+                updateStatsUI();
+
+                // Inject a waterfall of diagnostic warnings
+                logToTerminal('terminal-traffic', "ALERT: Severe congestion detected on Segment ID 112 (Central Expressway North)", "WARN");
+                logToTerminal('terminal-traffic', "Traffic Dynamics moving average calculations drop below 25 km/h limit.", "WARN");
+                logToTerminal('terminal-traffic', "SQL query lateral join flagged slow execution time (342ms) due to scale.", "DEBUG");
+                logToTerminal('terminal-traffic', "ALERT: High load threshold reached for traffic_readings index. Partitioning recommended.", "WARN");
+                logToTerminal('terminal-traffic', "Successfully updated congestion routing profiles for 11 downstream routes.", "INFO");
+
+            } else if (type === 'thunderstorm') {
+                // Card highlight effect
+                flashCardBorder('card-weather', 'animate-flash-amber');
+
+                // Set stats immediately
+                state.stats.weather.rain = 19.5;
+                state.stats.weather.temp = 13.8;
+                state.stats.weather.visibility = 1200;
+                updateStatsUI();
+
+                // Inject a waterfall of diagnostic warnings
+                logToTerminal('terminal-weather', "ALERT: Precipitation surge detected. Continuous rain intensity > 18 mm/hr", "WARN");
+                logToTerminal('terminal-weather', "Atmospheric visibility drop: degrading from 10,000m to 1,200m (Advisory Status: Severe)", "WARN");
+                logToTerminal('terminal-weather', "Spatial nearest-neighbor queries recalculating grid distances with weather profiles.", "INFO");
+                logToTerminal('terminal-weather', "ERROR: Heavy noise feedback on ambient thermometer channel WS-14.", "ERROR");
+                logToTerminal('terminal-weather', "Successfully committed degraded weather profile for routing optimization matrix.", "INFO");
+
+            } else if (type === 'accident') {
+                // Card highlight effect
+                flashCardBorder('card-incidents', 'animate-flash-red');
+
+                // Set stats immediately
+                state.stats.incidents.active += 1;
+                state.stats.incidents.critical += 1;
+                updateStatsUI();
+
+                // Inject accident warnings
+                logToTerminal('terminal-incidents', "CRITICAL INGESTION: Multi-vehicle accident reported on Segment 108 (Bay Bridge Eastbound)", "ERROR");
+                logToTerminal('terminal-incidents', "Validation succeeded: Ingested GeoJSON POINT geometry (SRID 4326)", "INFO");
+                logToTerminal('terminal-incidents', "DB execution: Inserted incident row UUID " + Math.random().toString(16).substr(2, 8) + " successfully.", "INFO");
+                logToTerminal('terminal-incidents', "ALERT: Critical event on corridor triggers automatic ML routing time recalculations.", "WARN");
+
+            } else if (type === 'construction') {
+                // Card highlight effect
+                flashCardBorder('card-construction', 'animate-flash-emerald');
+
+                // Set stats immediately
+                state.stats.construction.active += 1;
+                state.stats.construction.planned = Math.max(0, state.stats.construction.planned - 1);
+                updateStatsUI();
+
+                // Inject construction warnings
+                logToTerminal('terminal-construction', "INGEST: Scheduled lane restriction transitioned from 'planned' to 'active'.", "INFO");
+                logToTerminal('terminal-construction', "Project: 'I-80 Bridge Main Deck Reconstruction'. Segment restriction ID 405.", "INFO");
+                logToTerminal('terminal-construction', "ST_Polygon geometry loaded. Restricted lane capacity updated to 50% flow capacity.", "WARN");
+                logToTerminal('terminal-construction', "Successfully completed index update for active work zones.", "INFO");
+            }
+        }
+
+        // Flashes card border for dynamic feedback
+        function flashCardBorder(cardId, flashClass) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            card.classList.add(flashClass);
+            setTimeout(() => {
+                card.classList.remove(flashClass);
+            }, 2000);
+        }
+
+        // BACKEND API INTEGRATION FALLBACK CHECK
+        async function checkBackendConnection() {
+            // Attempt to fetch standard health endpoints (relative and absolute)
+            const endpoints = ['/api/health', 'http://localhost:8000/api/health'];
+            let connected = false;
+            let dbStateMsg = "DB: DISCONNECTED (DEMO)";
+            
+            for (const url of endpoints) {
+                try {
+                    const response = await fetch(url, { method: 'GET' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        connected = true;
+                        state.isLiveBackend = true;
+                        state.backendUrl = url.replace('/api/health', '');
+                        
+                        // Check Supabase/PostgreSQL connection inside health response
+                        const dbHealthy = data.services && data.services.database && data.services.database.status === 'healthy';
+                        dbStateMsg = dbHealthy ? "DB: POSTGRESQL CONNECTED" : "DB: POSTGRES DEGRADED";
+                        
+                        updateBackendStatusUI(true, data);
+                        break;
+                    }
+                } catch (e) {
+                    // Try next endpoint
+                }
+            }
+            
+            if (!connected) {
+                updateBackendStatusUI(false);
+            }
+            document.getElementById('footer-db-status').innerText = dbStateMsg;
+        }
+
+        function updateBackendStatusUI(isLive, data = null) {
+            const badge = document.getElementById('mode-badge');
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('status-text');
+            
+            if (isLive) {
+                badge.innerText = "LIVE BACKEND";
+                badge.className = "font-bold text-emerald-400 tracking-wide";
+                
+                // Update header metrics with actual backend health status if available
+                if (data && data.status === 'online') {
+                    dot.className = "h-2.5 w-2.5 rounded-full bg-emerald-500 glowing-dot-active shadow-[0_0_10px_#10b981]";
+                    txt.innerText = "API CONTEXT: ONLINE";
+                    logToTerminal('terminal-traffic', "Successfully bound connection to Live FastAPI server at " + state.backendUrl, "INFO");
+                    
+                    // Attempt to fetch live database records to pre-populate counts
+                    fetchLiveCounts();
+                } else {
+                    dot.className = "h-2.5 w-2.5 rounded-full bg-amber-500 glowing-dot-active shadow-[0_0_10px_#f59e0b]";
+                    txt.innerText = "API CONTEXT: DEGRADED";
+                    logToTerminal('terminal-traffic', "Connection to API succeeded, but database services report degraded state.", "WARN");
+                }
+            } else {
+                badge.innerText = "MOCK DEMO";
+                badge.className = "font-bold text-cyan-400 tracking-wide";
+                dot.className = "h-2.5 w-2.5 rounded-full bg-emerald-500 glowing-dot-active shadow-[0_0_10px_#10b981]";
+                txt.innerText = "SYSTEM HEALTHY";
+                
+                // Print friendly message in main terminal
+                logToTerminal('terminal-traffic', "FastAPI backend offline or inaccessible. Running in high-fidelity mock stream mode.", "INFO");
+            }
+        }
+
+        async function fetchLiveCounts() {
+            if (!state.isLiveBackend) return;
+            
+            // Fetch live active incidents to update indicators
+            try {
+                const response = await fetch(state.backendUrl + '/api/incidents');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.features) {
+                        state.stats.incidents.active = data.features.length;
+                        logToTerminal('terminal-incidents', `Successfully queried ${data.features.length} active incidents from Live DB.`, "INFO");
+                        updateStatsUI();
+                    }
+                }
+            } catch (e) {
+                // Silently fall back to mock
+            }
+        }
+
+        // INITIALIZE COMMAND CENTER FEEDS
+        window.onload = () => {
+            // Write initial logs to each console
+            logToTerminal('terminal-traffic', "SmartFlow Traffic Ingestion pipeline online.", "INFO");
+            logToTerminal('terminal-traffic', "Awaiting telemetry data packet streams...", "DEBUG");
+            
+            logToTerminal('terminal-weather', "Weather Alert Ingestion pipeline online.", "INFO");
+            logToTerminal('terminal-weather', "Listening for spatial coordinates snapshot updates...", "DEBUG");
+            
+            logToTerminal('terminal-incidents', "Active Road Incidents GeoJSON processor online.", "INFO");
+            logToTerminal('terminal-incidents', "Awaiting incident report events...", "DEBUG");
+            
+            logToTerminal('terminal-construction', "Construction Zone schedule synchronizer online.", "INFO");
+            logToTerminal('terminal-construction', "Ready to load planned/active restricted lanes...", "DEBUG");
+
+            // Populate some initial dummy lines so the terminal isn't bare
+            for (let i = 0; i < 4; i++) {
+                setTimeout(() => { generateSinglePipelineLog('traffic'); }, 100 * i);
+                setTimeout(() => { generateSinglePipelineLog('weather'); }, 150 * i);
+                setTimeout(() => { generateSinglePipelineLog('incidents'); }, 200 * i);
+                setTimeout(() => { generateSinglePipelineLog('construction'); }, 250 * i);
+            }
+
+            // Start loop generator
+            intervalTimer = setInterval(streamGeneratorStep, state.intervalSpeed);
+
+            // Check connection to real FastAPI backend
+            checkBackendConnection();
+        };
+    </script>
+</body>
+</html>
