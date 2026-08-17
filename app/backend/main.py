@@ -200,12 +200,13 @@ async def root() -> Dict[str, str]:
 
 
 # Include Routers (to be created next)
-from app.backend.routers import traffic, weather, incidents, analytics
+from app.backend.routers import traffic, weather, incidents, analytics, prediction
 
 app.include_router(traffic.router, prefix="/api", tags=["Traffic"])
 app.include_router(weather.router, prefix="/api", tags=["Weather"])
 app.include_router(incidents.router, prefix="/api", tags=["Incidents"])
 app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
+app.include_router(prediction.router, prefix="/api", tags=["Prediction"])
 
 # Serve static frontend files
 from fastapi.staticfiles import StaticFiles
